@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # ApertureScienceOS Archiso Profile Configuration
 
-iso_name="ApertureScienceOS"
-iso_label="APERTURE_$(date +%Y%m)"
-iso_publisher="Aperture Science Laboratories <https://aperturescience.com>"
-iso_application="Aperture Science Computer Operating System"
+iso_name="CallieOS"
+iso_label="CALLIE_$(date +%Y%m)"
+iso_publisher="CallieFan <https://callielovesroller.com>"
+iso_application="Callie Operating System"
 iso_version="$(date +%Y.%m.%d)"
 install_dir="arch"
 buildmodes=('iso')
