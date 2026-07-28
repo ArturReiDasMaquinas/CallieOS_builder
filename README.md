@@ -1,18 +1,17 @@
-# ApertureScienceOS - Custom Arch Linux ISO Project
+# Callie - Custom Arch Linux ISO Project
 
-System designed for test subjects and Aperture Science Laboratories personnel.
+jokeOS.
 
 ---
 
 ## 🎨 System Specs & Branding
 
-- **OS Name:** ApertureScienceOS
-- **Primary Color:** Aperture Orange (`#ff9900`)
-- **Active Boot Logo:** `ApertureLogo01.png`
-- **Old Logo:** `ApertureLogoOld.png` (Disabled/Archived)
+- **OS Name:** CallieOS
+- **Primary Color:** magenta (`#ff00ff`)
+- **Active Boot Logo:** `CallieLogo.png`
 - **Wallpapers Included:**
-  - `/usr/share/backgrounds/aperture/ApertureWallpaper01.png`
-  - `/usr/share/backgrounds/aperture/ApertureWallpaperOld.png`
+  - `/usr/share/backgrounds/callie/Wallpaper01.png`
+  - `/usr/share/backgrounds/callie/Wallpaper02.png`
 
 ---
 
