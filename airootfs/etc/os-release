@@ -1,0 +1,8 @@
+NAME="CallieOS"
+PRETTY_NAME="CallieOS v1.0"
+ID=callieos
+ID_LIKE=arch
+BUILD_ID=rolling
+ANSI_COLOR="38;2;255;153;0"
+HOME_URL="https://callielovesroller.com/"
+LOGO=CallieLogo

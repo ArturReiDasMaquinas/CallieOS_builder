@@ -1,0 +1,48 @@
+# ApertureScienceOS Package List
+base
+linux
+linux-firmware
+base-devel
+sudo
+git
+curl
+wget
+nano
+vim
+micro
+bash-completion
+plymouth
+
+# Networking
+networkmanager
+network-manager-applet
+wireless_tools
+wpa_supplicant
+bluez
+bluez-utils
+
+# Audio
+pipewire
+pipewire-alsa
+pipewire-pulse
+pipewire-jack
+wireplumber
+pavucontrol
+
+# Desktop Environment & Graphics
+xorg-server
+xorg-xinit
+mesa
+lightdm
+lightdm-gtk-greeter
+xfce4
+xfce4-terminal
+xfce4-goodies
+alacritty
+thunar
+feh
+fastfetch
+htop
+
+# Installation
+archinstall
