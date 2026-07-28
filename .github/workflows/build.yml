@@ -1,0 +1,119 @@
+name: Build CallieOS
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build-iso:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar código do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar dispositivos de Loop
+        run: |
+          sudo modprobe loop
+          sudo mknod -m 0660 /dev/loop-control c 10 237 || true
+          for i in $(seq 0 7); do
+            sudo mknod -m 0660 /dev/loop$i b 7 $i || true
+          done
+
+      - name: Criar e Executar Script de Compilação
+        run: |
+          cat << 'EOF' > run_build.sh
+          #!/bin/bash
+          set -e
+
+          echo "=== 1. Atualizando Chaves e Pacotes Base ==="
+          pacman-key --init
+          pacman-key --populate archlinux
+          pacman -Sy --noconfirm archlinux-keyring
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm archiso mkinitcpio git rsync dos2unix syslinux mtools dosfstools squashfs-tools libisoburn edk2-ovmf erofs-utils grub python
+
+          echo "=== 2. Entrando na pasta do projeto ==="
+          if [ -d "CallieOS_builder" ]; then
+            cd CallieOS_builder
+          fi
+
+          mkdir -p out
+
+          echo "=== 3. Copiando arquivos base do releng com seguranca ==="
+          rsync -avI /usr/share/archiso/configs/releng/ .
+
+          find . -type f \( -name "*.sh" -o -name "packages.x86_64" -o -name "profiledef.sh" -o -name "pacman.conf" -o -name "mkinitcpio.conf" \) -exec dos2unix {} + 2>/dev/null || true
+
+          echo "=== 4. Injetando Pacotes e archinstall ==="
+          PKGS="base linux linux-firmware base-devel sudo git curl wget nano micro bash-completion networkmanager syslinux archinstall fastfetch"
+          for pkg in $PKGS; do
+            grep -q "^${pkg}$" packages.x86_64 || echo "$pkg" >> packages.x86_64
+          done
+
+          echo "=== 5. Criando Instalador Tematico CallieOS ==="
+          install -Dm 755 /dev/stdin airootfs/usr/local/bin/callie-install << 'INSTALLER'
+          #!/bin/bash
+          clear
+          echo -e "\033[1;95m"
+          echo "  ____________________________________________________"
+          echo " /                                                    \\"
+          echo " |               CALLIE OS - Stay Fresh!               |"
+          echo " |                    Installation                     |"
+          echo " \\____________________________________________________/"
+          echo -e "\033[0m"
+          echo -e "\033[1;35m[System]: Launching...\033[0m"
+          echo -e "\033[1;36m[System]: archinstall loaded.\033[0m\n"
+
+          archinstall
+          INSTALLER
+
+          mkdir -p airootfs/etc/profile.d/
+          install -Dm 755 /dev/stdin airootfs/etc/profile.d/callie_aliases.sh << 'ALIASES'
+          alias instalar='/usr/local/bin/callie-install'
+          alias install='/usr/local/bin/callie-install'
+          alias callie-install='/usr/local/bin/callie-install'
+          ALIASES
+
+          echo "=== 6. Sincronizando Bootmodes ==="
+          echo "import re" > patch_profile.py
+          echo "releng_path = '/usr/share/archiso/configs/releng/profiledef.sh'" >> patch_profile.py
+          echo "with open(releng_path, 'r') as f:" >> patch_profile.py
+          echo "    releng = f.read()" >> patch_profile.py
+          echo "bm_match = re.search(r'bootmodes=\([\s\S]*?\)', releng)" >> patch_profile.py
+          echo "if bm_match:" >> patch_profile.py
+          echo "    bm = bm_match.group(0)" >> patch_profile.py
+          echo "    with open('profiledef.sh', 'r') as f:" >> patch_profile.py
+          echo "        target = f.read()" >> patch_profile.py
+          echo "    new_target = re.sub(r'bootmodes=\([\s\S]*?\)', bm, target)" >> patch_profile.py
+          echo "    with open('profiledef.sh', 'w') as f:" >> patch_profile.py
+          echo "        f.write(new_target)" >> patch_profile.py
+          
+          python3 patch_profile.py
+
+          echo "=== 7. Gerando a ISO Final ==="
+          if [ -f "build.sh" ]; then
+            chmod +x build.sh
+            ./build.sh
+          else
+            mkarchiso -v -w work -o out .
+          fi
+          EOF
+
+          chmod +x run_build.sh
+
+      - name: Executar Build dentro do Container Arch Linux
+        run: |
+          docker run --privileged \
+            -v /dev:/dev \
+            -v ${{ github.workspace }}:/workspace \
+            -w /workspace \
+            archlinux:latest \
+            bash /workspace/run_build.sh
+
+      - name: Disponibilizar a ISO para Download
+        uses: actions/upload-artifact@v4
+        with:
+          name: CallieOS-ISO
+          path: "**/out/*.iso"
