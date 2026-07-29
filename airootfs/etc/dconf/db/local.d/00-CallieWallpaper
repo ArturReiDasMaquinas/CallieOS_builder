@@ -1,0 +1,5 @@
+[org/cinnamon/desktop/background]
+picture-options='zoom'
+slideshow-enabled=true
+slideshow-delay=15
+slideshow-image-path='/usr/share/backgrounds/callie/'
