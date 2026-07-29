@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Set Callie Wallpaper
+Exec=xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/workspace0/last-image -s /usr/share/backgrounds/callie/CallieLogo.png
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
