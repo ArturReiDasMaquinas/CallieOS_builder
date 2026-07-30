@@ -32,7 +32,7 @@ jobs:
           pacman-key --populate archlinux
           pacman -Sy --noconfirm archlinux-keyring
           pacman -Syu --noconfirm
-          pacman -S --noconfirm archiso mkinitcpio git rsync dos2unix syslinux mtools dosfstools squashfs-tools libisoburn edk2-ovmf erofs-utils grub python base-devel
+          pacman -S --noconfirm archiso mkinitcpio git rsync dos2unix syslinux mtools dosfstools squashfs-tools libisoburn edk2-ovmf erofs-utils grub python base-devel imagemagick
 
           echo "=== 1.1. Compilando e Instalando o libpamac-aur e Pamac ==="
           useradd -m aurbuilder
@@ -65,20 +65,21 @@ jobs:
 
           find . -type f \( -name "*.sh" -o -name "packages.x86_64" -o -name "profiledef.sh" -o -name "pacman.conf" -o -name "mkinitcpio.conf" \) -exec dos2unix {} + 2>/dev/null || true
 
-          # REMOVER PACOTE OBSOLETO SE ESTIVER SALVO NO REPOSITÓRIO
           sed -i '/xf86-video-vmware/d' packages.x86_64 2>/dev/null || true
 
-          echo "=== 3.1. Configurando multilib e Repositório Local no pacman.conf da ISO ==="
-          # Habilitar multilib no pacman.conf do archiso
+          echo "=== 3.1. Rebranding Completo: Substituindo Arch Linux por CallieOS no Boot e Configs ==="
+          find . -type f \( -name "*.cfg" -o -name "*.conf" -o -name "*.sh" -o -name "issue*" -o -name "grup*" \) -exec sed -i 's/Arch Linux/CallieOS/g' {} + || true
+          find . -type f \( -name "*.cfg" -o -name "*.conf" -o -name "*.sh" -o -name "issue*" -o -name "grup*" \) -exec sed -i 's/archiso/callieos/g' {} + || true
+          find . -type f \( -name "*.cfg" -o -name "*.conf" -o -name "*.sh" -o -name "issue*" -o -name "grup*" \) -exec sed -i 's/Archiso/CallieOS/g' {} + || true
+
+          echo "=== 3.2. Configurando multilib e Repositório Local no pacman.conf da ISO ==="
           sed -i '/^#\[multilib\]/{s/^#//;n;s/^#//}' pacman.conf
 
-          # Criar o repositório local dentro do profile e registrar os pacotes do AUR
           mkdir -p localrepo
           cp /home/aurbuilder/libpamac-aur/*.pkg.tar.zst localrepo/ 2>/dev/null || cp /workspace/libpamac-aur/*.pkg.tar.zst localrepo/ || true
           cp /home/aurbuilder/pamac-aur/*.pkg.tar.zst localrepo/ 2>/dev/null || cp /workspace/pamac-aur/*.pkg.tar.zst localrepo/ || true
           repo-add localrepo/localrepo.db.tar.gz localrepo/*.pkg.tar.zst
 
-          # Adicionar o repositório local no pacman.conf do archiso
           echo -e "\n[localrepo]\nSigLevel = Optional TrustAll\nServer = file://$(pwd)/localrepo" >> pacman.conf
 
           echo "=== 4. Injetando Pacotes Gráficos, XFCE, Jogos, Flatpak e Pamac ==="
@@ -93,9 +94,64 @@ jobs:
           mkdir -p airootfs/etc/fastfetch
           mkdir -p airootfs/usr/share/fastfetch
           mkdir -p airootfs/usr/share/pixmaps
+          mkdir -p airootfs/usr/share/backgrounds/callie
           mkdir -p airootfs/var/lib/AccountsService/users
           mkdir -p airootfs/etc/lightdm
+          mkdir -p airootfs/etc/pam.d
+          mkdir -p airootfs/usr/lib
           mkdir -p airootfs/etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml
+
+          echo "=== 5.1. Definindo Nome do Sistema e Mensagem de Boot ==="
+          echo "callieos" > airootfs/etc/hostname
+          
+          cat << 'HOSTS' > airootfs/etc/hosts
+          127.0.0.1   localhost
+          ::1         localhost
+          127.0.1.1   callieos.localdomain   callieos
+          HOSTS
+
+          # Garantir o arquivo issue correto no airootfs
+          echo -e "\n\033[1;95mWelcome to CallieOS! (\n) (\l)\033[0m\n" > airootfs/etc/issue
+          echo "Welcome to CallieOS!" > airootfs/etc/issue.net
+
+          cat << 'OSREL' > airootfs/etc/os-release
+          NAME="CallieOS"
+          ID="callieos"
+          ID_LIKE="arch"
+          BUILD_ID=ROLLING
+          ANSI_COLOR="38,2,155,89,182"
+          HOME_URL="https://github.com/"
+          SUPPORT_URL="https://github.com/"
+          BUG_REPORT_URL="https://github.com/"
+          PRETTY_NAME="CallieOS - Stay Fresh!"
+          OSREL
+          ln -sf ../etc/os-release airootfs/usr/lib/os-release
+
+          echo "=== 5.2. Gerando Assets Visuais (Logo e Wallpaper CallieOS) ==="
+          convert -size 256x256 xc:transparent \
+            -fill "#9b59b6" -draw "circle 128,128 128,20" \
+            -fill white -pointsize 120 -gravity center -annotate +0+0 "C" \
+            airootfs/usr/share/pixmaps/CallieLogo.png
+
+          convert -size 1920x1080 gradient:"#1a0033"-"#3b0066" \
+            -fill "#ff77ff" -pointsize 72 -gravity center -annotate +0-40 "CALLIE OS" \
+            -fill "#cccccc" -pointsize 28 -gravity center -annotate +0+30 "Stay Fresh!" \
+            airootfs/usr/share/backgrounds/callie/wallpaper.png
+
+          echo "=== 5.3. Configurando XFCE Desktop para aplicar Wallpaper Automático ==="
+          cat << 'XFCEXML' > airootfs/etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
+          <?xml version="1.0" encoding="UTF-8"?>
+          <channel name="xfce4-desktop" version="1.0">
+            <property name="backdrop" type="empty">
+              <property name="screen0" type="empty">
+                <property name="monitor0" type="empty">
+                  <property name="image-path" type="string" value="/usr/share/backgrounds/callie/wallpaper.png"/>
+                  <property name="image-style" type="int" value="5"/>
+                </property>
+              </property>
+            </property>
+          </channel>
+          XFCEXML
 
           echo "=== 6. Criando o Instalador Tematico CallieOS ==="
           cat << 'INSTALLER' > airootfs/usr/local/bin/callie-install
@@ -106,7 +162,7 @@ jobs:
           echo " /                                                    \\"
           echo " |                CALLIE OS - Stay Fresh!             |"
           echo " |                     Installation                   |"
-          echo " \\____________________________________________________/"
+          echo " \\___________________________________________________/"
           echo -e "\033[0m"
           echo -e "\033[1;35m[System]: Launching...\033[0m"
           echo -e "\033[1;36m[System]: archinstall loaded.\033[0m\n"
@@ -122,7 +178,7 @@ jobs:
           ALIASES
           chmod +x airootfs/etc/profile.d/callie_aliases.sh
 
-          echo "=== 7. Configurando LightDM e Fastfetch Globalmente ==="
+          echo "=== 7. Configurando LightDM, Pam e Auto-login ==="
           cat << 'LIGHTDMCONF' > airootfs/etc/lightdm/lightdm.conf
           [Seat:*]
           autologin-user=callieuser
@@ -131,18 +187,26 @@ jobs:
           greeter-session=lightdm-gtk-greeter
           LIGHTDMCONF
 
-          # Garantir fastfetch no bashrc global
+          cat << 'PAMAUTOLOGIN' > airootfs/etc/pam.d/lightdm-autologin
+          #%PAM-1.0
+          auth     required pam_env.so
+          auth     required pam_permit.so
+          account  include lightdm
+          password include lightdm
+          session  include lightdm
+          PAMAUTOLOGIN
+
           echo "fastfetch" >> airootfs/etc/bash.bashrc
 
-          echo "=== 8. Script de Pós-Instalação da Live (Usuario e Servicos) ==="
+          echo "=== 8. Script de Pós-Instalação da Live (Usuario, Grupos e Servicos) ==="
           mkdir -p airootfs/root/
           cat << 'CUSTOMIZE' > airootfs/root/customize_airootfs.sh
           #!/bin/bash
           groupadd -r autologin
           useradd -m -G wheel,audio,video,storage,autologin -s /bin/bash callieuser
+          gpasswd -a callieuser autologin
           echo "callieuser:1234" | chpasswd
           
-          # Correção de permissões da home
           chown -R callieuser:callieuser /home/callieuser
           chmod 700 /home/callieuser
 
@@ -151,7 +215,6 @@ jobs:
           CUSTOMIZE
           chmod +x airootfs/root/customize_airootfs.sh
 
-          # Configurar AccountsService com o caminho correto do icone
           cat << 'ACC' > airootfs/var/lib/AccountsService/users/callieuser
           [User]
           Session=xfce
