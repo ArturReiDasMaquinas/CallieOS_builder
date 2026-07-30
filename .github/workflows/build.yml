@@ -98,7 +98,6 @@ jobs:
           mkdir -p airootfs/var/lib/AccountsService/users
           mkdir -p airootfs/etc/lightdm
           mkdir -p airootfs/etc/pam.d
-          mkdir -p airootfs/usr/lib
           mkdir -p airootfs/etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml
 
           echo "=== 5.1. Definindo Nome do Sistema e Mensagem de Boot ==="
@@ -110,22 +109,8 @@ jobs:
           127.0.1.1   callieos.localdomain   callieos
           HOSTS
 
-          # Garantir o arquivo issue correto no airootfs
           echo -e "\n\033[1;95mWelcome to CallieOS! (\n) (\l)\033[0m\n" > airootfs/etc/issue
           echo "Welcome to CallieOS!" > airootfs/etc/issue.net
-
-          cat << 'OSREL' > airootfs/etc/os-release
-          NAME="CallieOS"
-          ID="callieos"
-          ID_LIKE="arch"
-          BUILD_ID=ROLLING
-          ANSI_COLOR="38,2,155,89,182"
-          HOME_URL="https://github.com/"
-          SUPPORT_URL="https://github.com/"
-          BUG_REPORT_URL="https://github.com/"
-          PRETTY_NAME="CallieOS - Stay Fresh!"
-          OSREL
-          ln -sf ../etc/os-release airootfs/usr/lib/os-release
 
           echo "=== 5.2. Gerando Assets Visuais (Logo e Wallpaper CallieOS) ==="
           convert -size 256x256 xc:transparent \
@@ -162,7 +147,7 @@ jobs:
           echo " /                                                    \\"
           echo " |                CALLIE OS - Stay Fresh!             |"
           echo " |                     Installation                   |"
-          echo " \\___________________________________________________/"
+          echo " \\____________________________________________________/"
           echo -e "\033[0m"
           echo -e "\033[1;35m[System]: Launching...\033[0m"
           echo -e "\033[1;36m[System]: archinstall loaded.\033[0m\n"
@@ -198,7 +183,7 @@ jobs:
 
           echo "fastfetch" >> airootfs/etc/bash.bashrc
 
-          echo "=== 8. Script de Pós-Instalação da Live (Usuario, Grupos e Servicos) ==="
+          echo "=== 8. Script de Pós-Instalação da Live (Usuario, Grupos e Identidade) ==="
           mkdir -p airootfs/root/
           cat << 'CUSTOMIZE' > airootfs/root/customize_airootfs.sh
           #!/bin/bash
@@ -211,6 +196,21 @@ jobs:
           chmod 700 /home/callieuser
 
           echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
+
+          # Sobrescrevendo o os-release com segurança pós-pacotes
+          cat << 'OSREL' > /etc/os-release
+          NAME="CallieOS"
+          ID="callieos"
+          ID_LIKE="arch"
+          BUILD_ID=ROLLING
+          ANSI_COLOR="38,2,155,89,182"
+          HOME_URL="https://github.com/"
+          SUPPORT_URL="https://github.com/"
+          BUG_REPORT_URL="https://github.com/"
+          PRETTY_NAME="CallieOS - Stay Fresh!"
+          OSREL
+          ln -sf /etc/os-release /usr/lib/os-release
+
           systemctl enable lightdm
           CUSTOMIZE
           chmod +x airootfs/root/customize_airootfs.sh
