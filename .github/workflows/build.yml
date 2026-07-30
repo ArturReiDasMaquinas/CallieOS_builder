@@ -46,8 +46,8 @@ jobs:
 
           find . -type f \( -name "*.sh" -o -name "packages.x86_64" -o -name "profiledef.sh" -o -name "pacman.conf" -o -name "mkinitcpio.conf" \) -exec dos2unix {} + 2>/dev/null || true
 
-          echo "=== 4. Injetando Pacotes do XFCE, LightDM e Ferramentas ==="
-          PKGS="base linux linux-firmware base-devel sudo git curl wget nano micro bash-completion networkmanager network-manager-applet syslinux archinstall fastfetch xfce4 xfce4-goodies lightdm lightdm-gtk-greeter accountsservice"
+          echo "=== 4. Injetando Pacotes Gráficos, XFCE e Ferramentas ==="
+          PKGS="base linux linux-firmware base-devel sudo git curl wget nano micro bash-completion networkmanager network-manager-applet syslinux archinstall fastfetch xorg-server xorg-xinit mesa xf86-video-vmware xfce4 xfce4-goodies lightdm lightdm-gtk-greeter accountsservice"
           for pkg in $PKGS; do
             grep -q "^${pkg}$" packages.x86_64 || echo "$pkg" >> packages.x86_64
           done
@@ -103,10 +103,11 @@ jobs:
           mkdir -p airootfs/root/
           cat << 'CUSTOMIZE' > airootfs/root/customize_airootfs.sh
           #!/bin/bash
-          useradd -m -G wheel,audio,video,storage -s /bin/bash callieuser
+          groupadd -r autologin
+          useradd -m -G wheel,audio,video,storage,autologin -s /bin/bash callieuser
           echo "callieuser:1234" | chpasswd
           
-          # CORREÇÃO DO LOOP DE LOGIN (Garante permissão total da home para o usuario)
+          # Correção de permissões da home
           chown -R callieuser:callieuser /home/callieuser
           chmod 700 /home/callieuser
 
