@@ -67,12 +67,7 @@ jobs:
 
           sed -i '/xf86-video-vmware/d' packages.x86_64 2>/dev/null || true
 
-          echo "=== 3.1. Rebranding Completo: Substituindo Arch Linux por CallieOS no Boot e Configs ==="
-          find . -type f \( -name "*.cfg" -o -name "*.conf" -o -name "*.sh" -o -name "issue*" -o -name "grup*" \) -exec sed -i 's/Arch Linux/CallieOS/g' {} + || true
-          find . -type f \( -name "*.cfg" -o -name "*.conf" -o -name "*.sh" -o -name "issue*" -o -name "grup*" \) -exec sed -i 's/archiso/callieos/g' {} + || true
-          find . -type f \( -name "*.cfg" -o -name "*.conf" -o -name "*.sh" -o -name "issue*" -o -name "grup*" \) -exec sed -i 's/Archiso/CallieOS/g' {} + || true
-
-          echo "=== 3.2. Configurando multilib e Repositório Local no pacman.conf da ISO ==="
+          echo "=== 3.1. Configurando multilib e Repositório Local no pacman.conf da ISO ==="
           sed -i '/^#\[multilib\]/{s/^#//;n;s/^#//}' pacman.conf
 
           mkdir -p localrepo
@@ -197,7 +192,6 @@ jobs:
 
           echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
 
-          # Sobrescrevendo o os-release com segurança pós-pacotes
           cat << 'OSREL' > /etc/os-release
           NAME="CallieOS"
           ID="callieos"
