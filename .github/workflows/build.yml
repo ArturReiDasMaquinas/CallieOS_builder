@@ -105,6 +105,11 @@ jobs:
           #!/bin/bash
           useradd -m -G wheel,audio,video,storage -s /bin/bash callieuser
           echo "callieuser:1234" | chpasswd
+          
+          # CORREÇÃO DO LOOP DE LOGIN (Garante permissão total da home para o usuario)
+          chown -R callieuser:callieuser /home/callieuser
+          chmod 700 /home/callieuser
+
           echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
           systemctl enable lightdm
           CUSTOMIZE
