@@ -46,21 +46,31 @@ jobs:
 
           find . -type f \( -name "*.sh" -o -name "packages.x86_64" -o -name "profiledef.sh" -o -name "pacman.conf" -o -name "mkinitcpio.conf" \) -exec dos2unix {} + 2>/dev/null || true
 
-          echo "=== 4. Injetando Pacotes e archinstall ==="
-          PKGS="base linux linux-firmware base-devel sudo git curl wget nano micro bash-completion networkmanager syslinux archinstall fastfetch"
+          echo "=== 4. Injetando Pacotes do XFCE, LightDM e Ferramentas ==="
+          PKGS="base linux linux-firmware base-devel sudo git curl wget nano micro bash-completion networkmanager network-manager-applet syslinux archinstall fastfetch xfce4 xfce4-goodies lightdm lightdm-gtk-greeter accountsservice"
           for pkg in $PKGS; do
             grep -q "^${pkg}$" packages.x86_64 || echo "$pkg" >> packages.x86_64
           done
 
-          echo "=== 5. Criando Instalador Tematico CallieOS ==="
-          install -Dm 755 /dev/stdin airootfs/usr/local/bin/callie-install << 'INSTALLER'
+          echo "=== 5. Criando Estruturas e Pastas Globais no airootfs ==="
+          mkdir -p airootfs/usr/local/bin
+          mkdir -p airootfs/etc/profile.d
+          mkdir -p airootfs/etc/fastfetch
+          mkdir -p airootfs/usr/share/fastfetch
+          mkdir -p airootfs/usr/share/backgrounds/callie
+          mkdir -p airootfs/var/lib/AccountsService/users
+          mkdir -p airootfs/etc/lightdm
+          mkdir -p airootfs/etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml
+
+          echo "=== 6. Criando o Instalador Tematico CallieOS ==="
+          cat << 'INSTALLER' > airootfs/usr/local/bin/callie-install
           #!/bin/bash
           clear
           echo -e "\033[1;95m"
           echo "  ____________________________________________________"
           echo " /                                                    \\"
-          echo " |               CALLIE OS - Stay Fresh!               |"
-          echo " |                    Installation                     |"
+          echo " |                CALLIE OS - Stay Fresh!             |"
+          echo " |                     Installation                   |"
           echo " \\____________________________________________________/"
           echo -e "\033[0m"
           echo -e "\033[1;35m[System]: Launching...\033[0m"
@@ -68,15 +78,47 @@ jobs:
 
           archinstall
           INSTALLER
+          chmod +x airootfs/usr/local/bin/callie-install
 
-          mkdir -p airootfs/etc/profile.d/
-          install -Dm 755 /dev/stdin airootfs/etc/profile.d/callie_aliases.sh << 'ALIASES'
+          cat << 'ALIASES' > airootfs/etc/profile.d/callie_aliases.sh
           alias instalar='/usr/local/bin/callie-install'
           alias install='/usr/local/bin/callie-install'
           alias callie-install='/usr/local/bin/callie-install'
           ALIASES
+          chmod +x airootfs/etc/profile.d/callie_aliases.sh
 
-          echo "=== 6. Sincronizando Bootmodes ==="
+          echo "=== 7. Configurando LightDM e Fastfetch Globalmente ==="
+          cat << 'LIGHTDMCONF' > airootfs/etc/lightdm/lightdm.conf
+          [Seat:*]
+          autologin-user=callieuser
+          autologin-user-timeout=0
+          user-session=xfce
+          greeter-session=lightdm-gtk-greeter
+          LIGHTDMCONF
+
+          # Garantir fastfetch no bashrc global
+          echo "fastfetch" >> airootfs/etc/bash.bashrc
+
+          echo "=== 8. Script de Pós-Instalação da Live (Usuario e Servicos) ==="
+          mkdir -p airootfs/root/
+          cat << 'CUSTOMIZE' > airootfs/root/customize_airootfs.sh
+          #!/bin/bash
+          useradd -m -G wheel,audio,video,storage -s /bin/bash callieuser
+          echo "callieuser:1234" | chpasswd
+          echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
+          systemctl enable lightdm
+          CUSTOMIZE
+          chmod +x airootfs/root/customize_airootfs.sh
+
+          # Configurar AccountsService para a usuaria 'callieuser'
+          cat << 'ACC' > airootfs/var/lib/AccountsService/users/callieuser
+          [User]
+          Session=xfce
+          Icon=/usr/share/backgrounds/callie/CallieLogo.png
+          SystemAccount=false
+          ACC
+
+          echo "=== 9. Sincronizando Bootmodes ==="
           echo "import re" > patch_profile.py
           echo "releng_path = '/usr/share/archiso/configs/releng/profiledef.sh'" >> patch_profile.py
           echo "with open(releng_path, 'r') as f:" >> patch_profile.py
@@ -92,7 +134,7 @@ jobs:
           
           python3 patch_profile.py
 
-          echo "=== 7. Gerando a ISO Final ==="
+          echo "=== 10. Gerando a ISO Final do CallieOS ==="
           if [ -f "build.sh" ]; then
             chmod +x build.sh
             ./build.sh
