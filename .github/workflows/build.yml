@@ -32,14 +32,9 @@ jobs:
           pacman-key --populate archlinux
           pacman -Sy --noconfirm archlinux-keyring
           pacman -Syu --noconfirm
-
-          # Habilitar o repositório multilib (necessário para a Steam)
-          sed -i '/^#\[multilib\]/{s/^#//;n;s/^#//}' /etc/pacman.conf
-          pacman -Sy --noconfirm
-
           pacman -S --noconfirm archiso mkinitcpio git rsync dos2unix syslinux mtools dosfstools squashfs-tools libisoburn edk2-ovmf erofs-utils grub python base-devel
 
-          echo "=== 1.1. Compilando dependências e o Pamac do AUR para Repositório Local ==="
+          echo "=== 1.1. Compilando dependências e o Pamac do AUR ==="
           useradd -m aurbuilder
           passwd -d aurbuilder
           printf 'aurbuilder ALL=(ALL) NOPASSWD: ALL\n' >> /etc/sudoers.d/aurbuilder
@@ -49,22 +44,16 @@ jobs:
             git clone https://aur.archlinux.org/libpamac-aur.git && \
             cd libpamac-aur && \
             makepkg -s --noconfirm && \
-            sudo pacman -U --noconfirm *.pkg.tar.zst && \
             cd /workspace && \
             git clone https://aur.archlinux.org/pamac-aur.git && \
             cd pamac-aur && \
             makepkg -s --noconfirm"
 
-          mkdir -p /workspace/localrepo
-          cp /home/aurbuilder/libpamac-aur/*.pkg.tar.zst /workspace/localrepo/ 2>/dev/null || cp /workspace/libpamac-aur/*.pkg.tar.zst /workspace/localrepo/ || true
-          cp /home/aurbuilder/pamac-aur/*.pkg.tar.zst /workspace/localrepo/ 2>/dev/null || cp /workspace/pamac-aur/*.pkg.tar.zst /workspace/localrepo/ || true
-          repo-add /workspace/localrepo/localrepo.db.tar.gz /workspace/localrepo/*.pkg.tar.zst
-
-          echo -e "\n[localrepo]\nSigLevel = Optional TrustAll\nServer = file:///workspace/localrepo" >> /etc/pacman.conf
-          pacman -Sy
-
           echo "=== 2. Entrando na pasta do projeto ==="
           if [ -d "CallieOS_builder" ]; then
+            cd CallieOS_builder
+          else
+            mkdir -p CallieOS_builder
             cd CallieOS_builder
           fi
 
@@ -77,6 +66,19 @@ jobs:
 
           # REMOVER PACOTE OBSOLETO SE ESTIVER SALVO NO REPOSITÓRIO
           sed -i '/xf86-video-vmware/d' packages.x86_64 2>/dev/null || true
+
+          echo "=== 3.1. Configurando multilib e Repositório Local no pacman.conf da ISO ==="
+          # Habilitar multilib no pacman.conf do archiso
+          sed -i '/^#\[multilib\]/{s/^#//;n;s/^#//}' pacman.conf
+
+          # Criar o repositório local dentro do profile e registrar os pacotes do AUR
+          mkdir -p localrepo
+          cp /workspace/libpamac-aur/*.pkg.tar.zst localrepo/ 2>/dev/null || true
+          cp /workspace/pamac-aur/*.pkg.tar.zst localrepo/ 2>/dev/null || true
+          repo-add localrepo/localrepo.db.tar.gz localrepo/*.pkg.tar.zst
+
+          # Adicionar o repositório local no pacman.conf do archiso
+          echo -e "\n[localrepo]\nSigLevel = Optional TrustAll\nServer = file://$(pwd)/localrepo" >> pacman.conf
 
           echo "=== 4. Injetando Pacotes Gráficos, XFCE, Jogos, Flatpak e Pamac ==="
           PKGS="base linux linux-firmware base-devel sudo git curl wget nano micro bash-completion networkmanager network-manager-applet iwd wpa_supplicant wireless-regdb usb_modeswitch dhcpcd syslinux archinstall fastfetch xorg-server xorg-xinit mesa xfce4 xfce4-goodies lightdm lightdm-gtk-greeter accountsservice steam lutris flatpak pamac-aur"
@@ -103,7 +105,7 @@ jobs:
           echo " /                                                    \\"
           echo " |                CALLIE OS - Stay Fresh!             |"
           echo " |                     Installation                   |"
-          echo " \\____________________________________________________/"
+          echo " \\___________________________________________________/"
           echo -e "\033[0m"
           echo -e "\033[1;35m[System]: Launching...\033[0m"
           echo -e "\033[1;36m[System]: archinstall loaded.\033[0m\n"
