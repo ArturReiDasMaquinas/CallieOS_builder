@@ -39,15 +39,24 @@ jobs:
 
           pacman -S --noconfirm archiso mkinitcpio git rsync dos2unix syslinux mtools dosfstools squashfs-tools libisoburn edk2-ovmf erofs-utils grub python base-devel
 
-          echo "=== 1.1. Compilando o Pamac do AUR para Repositório Local ==="
+          echo "=== 1.1. Compilando dependências e o Pamac do AUR para Repositório Local ==="
           useradd -m aurbuilder
           passwd -d aurbuilder
           printf 'aurbuilder ALL=(ALL) NOPASSWD: ALL\n' >> /etc/sudoers.d/aurbuilder
           chown -R aurbuilder:aurbuilder /workspace
 
-          su - aurbuilder -c "cd /workspace && git clone https://aur.archlinux.org/pamac-aur.git && cd pamac-aur && makepkg --noconfirm"
+          su - aurbuilder -c "cd /workspace && \
+            git clone https://aur.archlinux.org/libpamac-aur.git && \
+            cd libpamac-aur && \
+            makepkg -s --noconfirm && \
+            sudo pacman -U --noconfirm *.pkg.tar.zst && \
+            cd /workspace && \
+            git clone https://aur.archlinux.org/pamac-aur.git && \
+            cd pamac-aur && \
+            makepkg -s --noconfirm"
 
           mkdir -p /workspace/localrepo
+          cp /home/aurbuilder/libpamac-aur/*.pkg.tar.zst /workspace/localrepo/ 2>/dev/null || cp /workspace/libpamac-aur/*.pkg.tar.zst /workspace/localrepo/ || true
           cp /home/aurbuilder/pamac-aur/*.pkg.tar.zst /workspace/localrepo/ 2>/dev/null || cp /workspace/pamac-aur/*.pkg.tar.zst /workspace/localrepo/ || true
           repo-add /workspace/localrepo/localrepo.db.tar.gz /workspace/localrepo/*.pkg.tar.zst
 
