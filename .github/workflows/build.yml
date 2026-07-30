@@ -32,7 +32,27 @@ jobs:
           pacman-key --populate archlinux
           pacman -Sy --noconfirm archlinux-keyring
           pacman -Syu --noconfirm
-          pacman -S --noconfirm archiso mkinitcpio git rsync dos2unix syslinux mtools dosfstools squashfs-tools libisoburn edk2-ovmf erofs-utils grub python
+
+          # Habilitar o repositório multilib (necessário para a Steam)
+          sed -i '/^#\[multilib\]/{s/^#//;n;s/^#//}' /etc/pacman.conf
+          pacman -Sy --noconfirm
+
+          pacman -S --noconfirm archiso mkinitcpio git rsync dos2unix syslinux mtools dosfstools squashfs-tools libisoburn edk2-ovmf erofs-utils grub python base-devel
+
+          echo "=== 1.1. Compilando o Pamac do AUR para Repositório Local ==="
+          useradd -m aurbuilder
+          passwd -d aurbuilder
+          printf 'aurbuilder ALL=(ALL) NOPASSWD: ALL\n' >> /etc/sudoers.d/aurbuilder
+          chown -R aurbuilder:aurbuilder /workspace
+
+          su - aurbuilder -c "cd /workspace && git clone https://aur.archlinux.org/pamac-aur.git && cd pamac-aur && makepkg --noconfirm"
+
+          mkdir -p /workspace/localrepo
+          cp /home/aurbuilder/pamac-aur/*.pkg.tar.zst /workspace/localrepo/ 2>/dev/null || cp /workspace/pamac-aur/*.pkg.tar.zst /workspace/localrepo/ || true
+          repo-add /workspace/localrepo/localrepo.db.tar.gz /workspace/localrepo/*.pkg.tar.zst
+
+          echo -e "\n[localrepo]\nSigLevel = Optional TrustAll\nServer = file:///workspace/localrepo" >> /etc/pacman.conf
+          pacman -Sy
 
           echo "=== 2. Entrando na pasta do projeto ==="
           if [ -d "CallieOS_builder" ]; then
@@ -46,8 +66,11 @@ jobs:
 
           find . -type f \( -name "*.sh" -o -name "packages.x86_64" -o -name "profiledef.sh" -o -name "pacman.conf" -o -name "mkinitcpio.conf" \) -exec dos2unix {} + 2>/dev/null || true
 
-          echo "=== 4. Injetando Pacotes Gráficos, XFCE e Ferramentas de Rede ==="
-          PKGS="base linux linux-firmware base-devel sudo git curl wget nano micro bash-completion networkmanager network-manager-applet iwd wpa_supplicant wireless-regdb usb_modeswitch dhcpcd syslinux archinstall fastfetch xorg-server xorg-xinit mesa xfce4 xfce4-goodies lightdm lightdm-gtk-greeter accountsservice"
+          # REMOVER PACOTE OBSOLETO SE ESTIVER SALVO NO REPOSITÓRIO
+          sed -i '/xf86-video-vmware/d' packages.x86_64 2>/dev/null || true
+
+          echo "=== 4. Injetando Pacotes Gráficos, XFCE, Jogos, Flatpak e Pamac ==="
+          PKGS="base linux linux-firmware base-devel sudo git curl wget nano micro bash-completion networkmanager network-manager-applet iwd wpa_supplicant wireless-regdb usb_modeswitch dhcpcd syslinux archinstall fastfetch xorg-server xorg-xinit mesa xfce4 xfce4-goodies lightdm lightdm-gtk-greeter accountsservice steam lutris flatpak pamac-aur"
           for pkg in $PKGS; do
             grep -q "^${pkg}$" packages.x86_64 || echo "$pkg" >> packages.x86_64
           done
@@ -57,7 +80,7 @@ jobs:
           mkdir -p airootfs/etc/profile.d
           mkdir -p airootfs/etc/fastfetch
           mkdir -p airootfs/usr/share/fastfetch
-          mkdir -p airootfs/usr/share/backgrounds/callie
+          mkdir -p airootfs/usr/share/pixmaps
           mkdir -p airootfs/var/lib/AccountsService/users
           mkdir -p airootfs/etc/lightdm
           mkdir -p airootfs/etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml
@@ -116,11 +139,11 @@ jobs:
           CUSTOMIZE
           chmod +x airootfs/root/customize_airootfs.sh
 
-          # Configurar AccountsService para a usuaria 'callieuser'
+          # Configurar AccountsService com o caminho correto do icone
           cat << 'ACC' > airootfs/var/lib/AccountsService/users/callieuser
           [User]
           Session=xfce
-          Icon=/usr/share/backgrounds/callie/CallieLogo.png
+          Icon=/usr/share/pixmaps/CallieLogo.png
           SystemAccount=false
           ACC
 
