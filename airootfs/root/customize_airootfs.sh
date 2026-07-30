@@ -2,7 +2,7 @@
 
 # 1. Criar o usuário 'callie' com senha '1234'
 useradd -m -G wheel,audio,video,storage -s /bin/bash callie
-echo "callie:1234" | chpasswd
+echo "callieuser:1234" | chpasswd
 
 # 2. Dar permissão de sudo sem senha para o grupo wheel
 echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
