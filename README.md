@@ -23,4 +23,4 @@ chmod +x build.sh
 sudo ./build.sh
 ```
 
-The output ISO will be generated in `./out/ApertureScienceOS-*.iso`.
+The output ISO will be generated in `./out/CallieOS-*.iso`.
