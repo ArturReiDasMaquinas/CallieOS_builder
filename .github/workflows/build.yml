@@ -34,7 +34,7 @@ jobs:
           pacman -Syu --noconfirm
           pacman -S --noconfirm archiso mkinitcpio git rsync dos2unix syslinux mtools dosfstools squashfs-tools libisoburn edk2-ovmf erofs-utils grub python base-devel
 
-          echo "=== 1.1. Compilando dependências e o Pamac do AUR ==="
+          echo "=== 1.1. Compilando e Instalando o libpamac-aur e Pamac ==="
           useradd -m aurbuilder
           passwd -d aurbuilder
           printf 'aurbuilder ALL=(ALL) NOPASSWD: ALL\n' >> /etc/sudoers.d/aurbuilder
@@ -44,6 +44,7 @@ jobs:
             git clone https://aur.archlinux.org/libpamac-aur.git && \
             cd libpamac-aur && \
             makepkg -s --noconfirm && \
+            sudo pacman -U --noconfirm *.pkg.tar.zst && \
             cd /workspace && \
             git clone https://aur.archlinux.org/pamac-aur.git && \
             cd pamac-aur && \
@@ -73,8 +74,8 @@ jobs:
 
           # Criar o repositório local dentro do profile e registrar os pacotes do AUR
           mkdir -p localrepo
-          cp /workspace/libpamac-aur/*.pkg.tar.zst localrepo/ 2>/dev/null || true
-          cp /workspace/pamac-aur/*.pkg.tar.zst localrepo/ 2>/dev/null || true
+          cp /home/aurbuilder/libpamac-aur/*.pkg.tar.zst localrepo/ 2>/dev/null || cp /workspace/libpamac-aur/*.pkg.tar.zst localrepo/ || true
+          cp /home/aurbuilder/pamac-aur/*.pkg.tar.zst localrepo/ 2>/dev/null || cp /workspace/pamac-aur/*.pkg.tar.zst localrepo/ || true
           repo-add localrepo/localrepo.db.tar.gz localrepo/*.pkg.tar.zst
 
           # Adicionar o repositório local no pacman.conf do archiso
