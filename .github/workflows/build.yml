@@ -106,7 +106,7 @@ jobs:
           echo " /                                                    \\"
           echo " |                CALLIE OS - Stay Fresh!             |"
           echo " |                     Installation                   |"
-          echo " \\___________________________________________________/"
+          echo " \\____________________________________________________/"
           echo -e "\033[0m"
           echo -e "\033[1;35m[System]: Launching...\033[0m"
           echo -e "\033[1;36m[System]: archinstall loaded.\033[0m\n"
@@ -182,6 +182,10 @@ jobs:
           else
             mkarchiso -v -w work -o out .
           fi
+
+          echo "=== 11. Limpando diretorio work e ajustando permissoes ==="
+          rm -rf work
+          chmod -R 777 out
           EOF
 
           chmod +x run_build.sh
@@ -199,4 +203,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: CallieOS-ISO
-          path: "**/out/*.iso"
+          path: CallieOS_builder/out/*.iso
