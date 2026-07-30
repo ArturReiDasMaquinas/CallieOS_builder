@@ -1,6 +1,6 @@
 # Callie - Custom Arch Linux ISO Project
 
-jokeOS.
+--joke-- serious OS.
 
 ---
 
