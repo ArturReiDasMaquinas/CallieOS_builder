@@ -92,7 +92,6 @@ jobs:
           mkdir -p airootfs/usr/share/backgrounds/callie
           mkdir -p airootfs/var/lib/AccountsService/users
           mkdir -p airootfs/etc/lightdm
-          mkdir -p airootfs/etc/pam.d
           mkdir -p airootfs/etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml
 
           echo "=== 5.1. Definindo Nome do Sistema e Mensagem de Boot ==="
@@ -116,7 +115,7 @@ jobs:
           convert -size 1920x1080 gradient:"#1a0033"-"#3b0066" \
             -fill "#ff77ff" -pointsize 72 -gravity center -annotate +0-40 "CALLIE OS" \
             -fill "#cccccc" -pointsize 28 -gravity center -annotate +0+30 "Stay Fresh!" \
-            airootfs/usr/share/backgrounds/callie/wallpaper.png
+            airootfs/usr/share/backgrounds/callie/Wallpaper01.png
 
           echo "=== 5.3. Configurando XFCE Desktop para aplicar Wallpaper Automático ==="
           cat << 'XFCEXML' > airootfs/etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/xfce4-desktop.xml
@@ -125,7 +124,7 @@ jobs:
             <property name="backdrop" type="empty">
               <property name="screen0" type="empty">
                 <property name="monitor0" type="empty">
-                  <property name="image-path" type="string" value="/usr/share/backgrounds/callie/wallpaper.png"/>
+                  <property name="image-path" type="string" value="/usr/share/backgrounds/callie/Wallpaper01.png"/>
                   <property name="image-style" type="int" value="5"/>
                 </property>
               </property>
@@ -142,7 +141,7 @@ jobs:
           echo " /                                                    \\"
           echo " |                CALLIE OS - Stay Fresh!             |"
           echo " |                     Installation                   |"
-          echo " \\____________________________________________________/"
+          echo " \\___________________________________________________/"
           echo -e "\033[0m"
           echo -e "\033[1;35m[System]: Launching...\033[0m"
           echo -e "\033[1;36m[System]: archinstall loaded.\033[0m\n"
@@ -158,23 +157,16 @@ jobs:
           ALIASES
           chmod +x airootfs/etc/profile.d/callie_aliases.sh
 
-          echo "=== 7. Configurando LightDM, Pam e Auto-login ==="
+          echo "=== 7. Configurando LightDM e Auto-login Corretamente ==="
           cat << 'LIGHTDMCONF' > airootfs/etc/lightdm/lightdm.conf
           [Seat:*]
           autologin-user=callieuser
           autologin-user-timeout=0
+          autologin-session=xfce
           user-session=xfce
           greeter-session=lightdm-gtk-greeter
+          session-wrapper=/etc/lightdm/Xsession
           LIGHTDMCONF
-
-          cat << 'PAMAUTOLOGIN' > airootfs/etc/pam.d/lightdm-autologin
-          #%PAM-1.0
-          auth     required pam_env.so
-          auth     required pam_permit.so
-          account  include lightdm
-          password include lightdm
-          session  include lightdm
-          PAMAUTOLOGIN
 
           echo "fastfetch" >> airootfs/etc/bash.bashrc
 
