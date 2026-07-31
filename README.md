@@ -1,6 +1,6 @@
 # Callie - Custom Arch Linux ISO Project
 
-~~joke~~ serious OS.
+Callie Operating System.
 
 ---
 
