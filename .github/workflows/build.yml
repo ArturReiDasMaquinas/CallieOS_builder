@@ -184,6 +184,18 @@ jobs:
 
           echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
 
+          # Garante a existência e permissão do Xsession do LightDM
+          if [ -f /usr/share/lightdm/Xsession ]; then
+              cp /usr/share/lightdm/Xsession /etc/lightdm/Xsession
+              chmod +x /etc/lightdm/Xsession
+          else
+              cat << 'XWRAPPER' > /etc/lightdm/Xsession
+          #!/bin/sh
+          exec "$@"
+          XWRAPPER
+              chmod +x /etc/lightdm/Xsession
+          fi
+
           cat << 'OSREL' > /etc/os-release
           NAME="CallieOS"
           ID="callieos"
